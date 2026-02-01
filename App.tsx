@@ -96,8 +96,8 @@ function App() {
           </div>
 
           <div className="hidden md:flex gap-16 items-center">
-            {['Explore', 'Philosophy'].map(item => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-[9px] uppercase tracking-[0.4em] text-softBlack/50 hover:text-gold transition-all relative group">
+            {['Explore', 'About Us'].map(item => (
+              <a key={item} href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} className="text-[9px] uppercase tracking-[0.4em] text-softBlack/50 hover:text-gold transition-all relative group">
                 {item}
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-gold transition-all duration-500 group-hover:w-full" />
               </a>
