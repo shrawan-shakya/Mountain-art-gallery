@@ -55,7 +55,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ artworks, onAdd, onUpdate,
     if (!formData.title) return;
 
     const data = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
+    // Fix: Cast entries to [string, string][] as we know all values in formData are strings
+    (Object.entries(formData) as [string, string][]).forEach(([key, value]) => {
       data.append(key, value);
     });
     if (selectedFile) data.append('image', selectedFile);

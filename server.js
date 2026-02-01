@@ -89,15 +89,16 @@ app.delete('/api/artworks/:id', (req, res) => {
 
 app.post('/api/generate-metadata', async (req, res) => {
   try {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: "API_KEY is missing on server" });
-    }
-    const ai = new GoogleGenAI({ apiKey });
+    // Correct initialization: always use process.env.API_KEY directly in the named parameter
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const { prompt } = req.body;
+    
+    // Using gemini-3-pro for high-quality curator reasoning
+    // Note: Removed googleSearch tool because guidelines state output might not be JSON if search is used,
+    // and mandatory grounding chunk extraction would be required.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Based on this description: "${prompt}", suggest a title, artist, medium, and dimensions for an alpine painting.`,
+      model: "gemini-3-pro-preview",
+      contents: `You are an elite museum curator for the Mountain Art Gallery. Based on this description: "${prompt}", suggest a formal title, a period-appropriate artist name, the physical medium, and gallery dimensions. Ensure the suggestions feel authentic to alpine art history.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -113,8 +114,13 @@ app.post('/api/generate-metadata', async (req, res) => {
         }
       }
     });
-    res.json(JSON.parse(response.text));
+    
+    // response.text is a getter, correctly handled here
+    const text = response.text;
+    if (!text) throw new Error("Empty response from AI");
+    res.json(JSON.parse(text));
   } catch (error) {
+    console.error("AI Generation Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -122,15 +128,19 @@ app.post('/api/generate-metadata', async (req, res) => {
 // 4. Serve Frontend
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
-  // Serve the production build from 'dist'
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
-  // If no build exists, inform the user (likely local dev mistake)
+  app.use(express.static(__dirname));
   app.get('*', (req, res) => {
-    res.status(200).send('<h1>Server is running</h1><p>Frontend not built. Run <code>npm run build</code> if in production, or <code>npm run dev</code> for local development.</p>');
+    const indexHtmlPath = path.join(__dirname, 'index.html');
+    if (fs.existsSync(indexHtmlPath)) {
+      res.sendFile(indexHtmlPath);
+    } else {
+      res.status(200).send('<h1>Gallery Server is running</h1><p>Frontend build (dist/) not found.</p>');
+    }
   });
 }
 

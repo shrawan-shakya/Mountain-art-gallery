@@ -1,7 +1,5 @@
 {
   "name": "Mountain Art Gallery",
   "description": "A dynamic curated digital exhibition of high-altitude landscape art, featuring a museum-grade UI, acquisition management, and an administrative dashboard.",
-  "requestFramePermissions": [
-    "camera"
-  ]
+  "requestFramePermissions": []
 }
