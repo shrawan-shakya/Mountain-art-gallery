@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Artwork } from './types';
 import { INITIAL_ARTWORKS, HERO_IMAGE } from './constants';
@@ -16,24 +17,23 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
 
+  // Sync with Backend
   useEffect(() => {
-    const saved = localStorage.getItem('mountain_gallery_art');
-    if (saved) {
-      setArtworks(JSON.parse(saved));
-    } else {
-      setArtworks(INITIAL_ARTWORKS);
-    }
+    fetchArtworks();
     const auth = sessionStorage.getItem('gallery_auth');
-    if (auth === 'true') {
-      setIsAuthenticated(true);
-    }
+    if (auth === 'true') setIsAuthenticated(true);
   }, []);
 
-  useEffect(() => {
-    if (artworks.length > 0) {
-      localStorage.setItem('mountain_gallery_art', JSON.stringify(artworks));
+  const fetchArtworks = async () => {
+    try {
+      const response = await fetch('/api/artworks');
+      const data = await response.json();
+      setArtworks(data.length > 0 ? data : INITIAL_ARTWORKS);
+    } catch (e) {
+      console.error("API error, falling back to initial data");
+      setArtworks(INITIAL_ARTWORKS);
     }
-  }, [artworks]);
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 80);
@@ -59,16 +59,26 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const addArtwork = (art: Artwork) => setArtworks(prev => [art, ...prev]);
-  const updateArtwork = (updatedArt: Artwork) => setArtworks(prev => prev.map(art => art.id === updatedArt.id ? updatedArt : art));
-  const deleteArtwork = (id: string) => setArtworks(prev => prev.filter(a => a.id !== id));
+  const addArtwork = async (formData: FormData) => {
+    const res = await fetch('/api/artworks', { method: 'POST', body: formData });
+    const newArt = await res.json();
+    setArtworks(prev => [newArt, ...prev]);
+  };
+
+  const updateArtwork = async (id: string, formData: FormData) => {
+    const res = await fetch(`/api/artworks/${id}`, { method: 'PUT', body: formData });
+    const updated = await res.json();
+    setArtworks(prev => prev.map(art => art.id === id ? updated : art));
+  };
+
+  const deleteArtwork = async (id: string) => {
+    await fetch(`/api/artworks/${id}`, { method: 'DELETE' });
+    setArtworks(prev => prev.filter(a => a.id !== id));
+  };
 
   const openCuratorPortal = () => {
-    if (isAuthenticated) {
-      setShowDashboard(true);
-    } else {
-      setShowLogin(true);
-    }
+    if (isAuthenticated) setShowDashboard(true);
+    else setShowLogin(true);
   };
 
   return (
@@ -100,7 +110,7 @@ function App() {
       </nav>
 
       <main>
-        {/* Simplified Hero Section */}
+        {/* Hero Section */}
         <section className="min-h-screen flex flex-col items-center justify-center relative pt-48 pb-32 bg-bone">
           <div className="absolute font-serif text-[50rem] italic opacity-[0.012] z-0 pointer-events-none select-none -translate-y-20">M</div>
           
@@ -113,12 +123,9 @@ function App() {
           </div>
 
           <div className="text-center max-w-[900px] z-[1] px-8">
-            {/* The Slogan - Redesigned Typography */}
             <div className="mb-12 animate-fade-up [animation-delay:300ms] opacity-0 fill-mode-forwards">
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-10">
-                <span className="font-sans text-[10px] uppercase tracking-[0.5em] font-light text-softBlack/30">
-                  this is not a website
-                </span>
+                <span className="font-sans text-[10px] uppercase tracking-[0.5em] font-light text-softBlack/30">this is not a website</span>
                 <div className="hidden sm:block w-[1px] h-4 bg-gold/40" />
                 <span className="font-serif text-xl sm:text-2xl uppercase tracking-[0.8em] font-medium text-softBlack">
                   this is <span className="text-gold">THE GALLERY</span>
@@ -126,7 +133,6 @@ function App() {
               </div>
             </div>
 
-            {/* The Quote - Scaled Down for Balance */}
             <div className="animate-fade-up [animation-delay:500ms] opacity-0 fill-mode-forwards mb-16">
               <h2 className="font-serif text-4xl sm:text-6xl font-light italic leading-tight text-softBlack/80">
                 "The vast silence of the high peaks, <br className="hidden lg:block" /> stretching beyond the horizon."
@@ -139,7 +145,6 @@ function App() {
                 <div className="absolute inset-0 bg-gold translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                 <span className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-20 text-[10px] uppercase tracking-[0.5em] font-semibold">Enter Exhibition</span>
               </a>
-              
               <div className="mt-20 flex flex-col items-center">
                 <div className="w-[1px] h-12 bg-softBlack/10 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-full bg-gold animate-scroll-slide" />
@@ -149,7 +154,6 @@ function App() {
           </div>
         </section>
 
-        {/* Gallery Section */}
         <section id="explore" className="py-64 px-8 sm:px-16">
           <div className="max-w-[1440px] mx-auto">
             <header className="flex flex-col md:flex-row justify-between items-end mb-48 max-sm:items-start gap-12 border-b border-softBlack/5 pb-20">
@@ -158,16 +162,13 @@ function App() {
                 <h3 className="font-serif text-6xl sm:text-8xl font-normal leading-[1.1] text-softBlack tracking-tighter">Altitudes &<br/>Atmosphere</h3>
               </div>
               <div className="max-w-[400px]">
-                <p className="text-base text-[#666] font-light leading-relaxed mb-8 italic">
-                  "Carved by ice and wind. Our role is but to archive the sublime before the light shifts."
-                </p>
+                <p className="text-base text-[#666] font-light leading-relaxed mb-8 italic">"Carved by ice and wind. Our role is but to archive the sublime before the light shifts."</p>
                 <div className="flex items-center gap-4 text-[9px] uppercase tracking-[0.4em] text-softBlack/40">
                   <div className="w-8 h-[1px] bg-softBlack/20" />
                   <span>Curated Works</span>
                 </div>
               </div>
             </header>
-
             <div className="gallery-grid-columns">
               {artworks.map(art => (
                 <ArtworkCard key={art.id} artwork={art} onEnquire={setSelectedArtwork} />
@@ -177,24 +178,18 @@ function App() {
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="py-40 px-8 sm:px-16 bg-bone border-t border-softBlack/5 text-center">
         <div className="max-w-[1400px] mx-auto flex flex-col items-center gap-16">
           <div className="flex flex-col items-center gap-8">
-            <div className="w-12 h-12 border border-softBlack/20 flex items-center justify-center font-serif text-2xl text-softBlack/40">
-              <span>M</span>
-            </div>
+            <div className="w-12 h-12 border border-softBlack/20 flex items-center justify-center font-serif text-2xl text-softBlack/40"><span>M</span></div>
             <p className="font-serif text-3xl italic text-softBlack tracking-tight opacity-80">Mountain Art Gallery</p>
           </div>
-          
           <div className="flex flex-wrap justify-center gap-12">
             {['Instagram', 'Artsy', 'Journal'].map(link => (
               <a key={link} href="#" className="text-[10px] uppercase tracking-[0.5em] text-softBlack/30 hover:text-gold transition-all">{link}</a>
             ))}
           </div>
-          
           <div className="w-16 h-[1px] bg-softBlack/5" />
-          
           <div className="text-[9px] uppercase tracking-[0.4em] text-softBlack/30 flex flex-col gap-4">
             <p>&copy; {new Date().getFullYear()} Mountain Art Gallery</p>
             <p className="opacity-50 tracking-[0.2em]">London &bull; Chamonix &bull; Zermatt</p>
