@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,7 +46,6 @@
       .museum-frame-inner-shadow { box-shadow: inset 0 0 20px rgba(255,255,255,0.03), 0 8px 25px rgba(0,0,0,0.1); }
       .artwork-inner-shadow { box-shadow: inset 0 4px 12px rgba(0,0,0,0.15); }
       
-      /* Strictly Contained Plaque Shine */
       .plaque-metallic {
         position: relative;
         overflow: hidden !important;
@@ -74,7 +74,6 @@
         transform: translateX(300%) skewX(-25deg);
       }
 
-      /* Authentic Gold Leaf Border Utility */
       .gold-leaf-border {
         border-image: linear-gradient(135deg, #8a6d3b 0%, #D4AF37 25%, #f7e2a8 50%, #D4AF37 75%, #8a6d3b 100%) 1;
       }
@@ -90,18 +89,22 @@
     "react": "https://esm.sh/react@^19.2.4",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
-    "path": "https://esm.sh/path@^0.12.7",
-    "fs": "https://esm.sh/fs@^0.0.1-security",
-    "url": "https://esm.sh/url@^0.11.4",
-    "cors": "https://esm.sh/cors@^2.8.6",
     "express": "https://esm.sh/express@^5.2.1",
-    "multer": "https://esm.sh/multer@^2.0.2"
+    "cors": "https://esm.sh/cors@^2.8.6",
+    "multer": "https://esm.sh/multer@^2.0.2",
+    "path": "https://esm.sh/path@^0.12.7",
+    "url": "https://esm.sh/url@^0.11.4",
+    "fs": "https://esm.sh/fs@^0.0.1-security",
+    "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "dotenv": "https://esm.sh/dotenv@^17.2.3"
   }
 }
 </script>
 </head>
 <body class="bg-bone text-softBlack font-sans antialiased overflow-x-hidden">
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

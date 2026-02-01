@@ -1,32 +1,16 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
-export const generateArtworkMetadata = async (imagePrompt: string) => {
+export const generateArtworkMetadata = async (prompt: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Based on this description of an alpine mountain painting: "${imagePrompt}", suggest a poetic title, an artist name (European sounding), a medium (like Oil on Canvas, etc.), and dimensions.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            artist: { type: Type.STRING },
-            medium: { type: Type.STRING },
-            dimensions: { type: Type.STRING },
-            year: { type: Type.STRING }
-          },
-          required: ["title", "artist", "medium", "dimensions", "year"]
-        }
-      }
+    const response = await fetch('/api/generate-metadata', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
     });
     
-    return JSON.parse(response.text);
+    if (!response.ok) throw new Error('Failed to fetch from backend');
+    return await response.json();
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Metadata Generation Error:", error);
     return null;
   }
 };

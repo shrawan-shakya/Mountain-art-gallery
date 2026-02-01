@@ -5,6 +5,10 @@ import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { GoogleGenAI, Type } from "@google/genai";
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,13 +16,16 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.static(__dirname)); // Serve the frontend files
 
-// Data Persistence (Simple File-based for demo, swap for Postgres in production)
+// API Routes FIRST
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Data Persistence
 const DATA_FILE = path.join(__dirname, 'artworks.json');
 const getArtworks = () => {
   if (!fs.existsSync(DATA_FILE)) return [];
@@ -28,11 +35,9 @@ const saveArtworks = (data) => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 };
 
-// Ensure Uploads directory exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
-// Multer Storage Configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
@@ -42,7 +47,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// API Endpoints
+// Artworks API
 app.get('/api/artworks', (req, res) => {
   res.json(getArtworks());
 });
@@ -63,10 +68,7 @@ app.put('/api/artworks/:id', upload.single('image'), (req, res) => {
   let artworks = getArtworks();
   const index = artworks.findIndex(a => a.id === req.params.id);
   if (index !== -1) {
-    const updated = {
-      ...artworks[index],
-      ...req.body,
-    };
+    const updated = { ...artworks[index], ...req.body };
     if (req.file) updated.imageUrl = `/uploads/${req.file.filename}`;
     artworks[index] = updated;
     saveArtworks(artworks);
@@ -83,10 +85,50 @@ app.delete('/api/artworks/:id', (req, res) => {
   res.status(204).send();
 });
 
-// Fallback to index.html for SPA routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+// Gemini Proxy API (Safe Server-side execution)
+app.post('/api/generate-metadata', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: `Based on this description of an alpine mountain painting: "${prompt}", suggest a poetic title, an artist name (European sounding), a medium (like Oil on Canvas, etc.), and dimensions.`,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            artist: { type: Type.STRING },
+            medium: { type: Type.STRING },
+            dimensions: { type: Type.STRING },
+            year: { type: Type.STRING }
+          },
+          required: ["title", "artist", "medium", "dimensions", "year"]
+        }
+      }
+    });
+    res.json(JSON.parse(response.text));
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    res.status(500).json({ error: "Failed to generate metadata" });
+  }
 });
+
+// STATIC CONTENT LAST
+// Serve the Vite 'dist' folder in production
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+} else {
+  // Development fallback
+  app.use(express.static(__dirname));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Gallery Server running on port ${PORT}`);
