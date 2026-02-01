@@ -16,8 +16,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -29,7 +27,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const DATA_FILE = path.join(__dirname, 'artworks.json');
 const getArtworks = () => {
   if (!fs.existsSync(DATA_FILE)) return [];
-  return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  } catch (e) {
+    return [];
+  }
 };
 const saveArtworks = (data) => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
@@ -88,7 +90,16 @@ app.delete('/api/artworks/:id', (req, res) => {
 // Gemini Proxy API (Safe Server-side execution)
 app.post('/api/generate-metadata', async (req, res) => {
   try {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      console.error("API_KEY environment variable is missing.");
+      return res.status(500).json({ error: "Gemini API Key is not configured on the server. Please add it to Render environment variables." });
+    }
+
+    // Initialize AI inside the route to prevent global crash if key is missing
+    const ai = new GoogleGenAI({ apiKey });
     const { prompt } = req.body;
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `Based on this description of an alpine mountain painting: "${prompt}", suggest a poetic title, an artist name (European sounding), a medium (like Oil on Canvas, etc.), and dimensions.`,
@@ -107,15 +118,15 @@ app.post('/api/generate-metadata', async (req, res) => {
         }
       }
     });
+    
     res.json(JSON.parse(response.text));
   } catch (error) {
     console.error("Gemini Error:", error);
-    res.status(500).json({ error: "Failed to generate metadata" });
+    res.status(500).json({ error: "Failed to generate metadata. Check server logs." });
   }
 });
 
 // STATIC CONTENT LAST
-// Serve the Vite 'dist' folder in production
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));
@@ -123,7 +134,6 @@ if (fs.existsSync(distPath)) {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
-  // Development fallback
   app.use(express.static(__dirname));
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
