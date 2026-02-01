@@ -20,15 +20,18 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// API Routes FIRST
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// 1. Static Uploads
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+app.use('/uploads', express.static(uploadDir));
 
-// Data Persistence
+// 2. Data Persistence
 const DATA_FILE = path.join(__dirname, 'artworks.json');
 const getArtworks = () => {
   if (!fs.existsSync(DATA_FILE)) return [];
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    const data = fs.readFileSync(DATA_FILE, 'utf8');
+    return JSON.parse(data);
   } catch (e) {
     return [];
   }
@@ -36,9 +39,6 @@ const getArtworks = () => {
 const saveArtworks = (data) => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 };
-
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
@@ -49,7 +49,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Artworks API
+// 3. API Routes
 app.get('/api/artworks', (req, res) => {
   res.json(getArtworks());
 });
@@ -87,22 +87,17 @@ app.delete('/api/artworks/:id', (req, res) => {
   res.status(204).send();
 });
 
-// Gemini Proxy API (Safe Server-side execution)
 app.post('/api/generate-metadata', async (req, res) => {
   try {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      console.error("API_KEY environment variable is missing.");
-      return res.status(500).json({ error: "Gemini API Key is not configured on the server. Please add it to Render environment variables." });
+      return res.status(500).json({ error: "API_KEY is missing on server" });
     }
-
-    // Initialize AI inside the route to prevent global crash if key is missing
     const ai = new GoogleGenAI({ apiKey });
     const { prompt } = req.body;
-
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Based on this description of an alpine mountain painting: "${prompt}", suggest a poetic title, an artist name (European sounding), a medium (like Oil on Canvas, etc.), and dimensions.`,
+      contents: `Based on this description: "${prompt}", suggest a title, artist, medium, and dimensions for an alpine painting.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -118,25 +113,24 @@ app.post('/api/generate-metadata', async (req, res) => {
         }
       }
     });
-    
     res.json(JSON.parse(response.text));
   } catch (error) {
-    console.error("Gemini Error:", error);
-    res.status(500).json({ error: "Failed to generate metadata. Check server logs." });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// STATIC CONTENT LAST
+// 4. Serve Frontend
 const distPath = path.join(__dirname, 'dist');
 if (fs.existsSync(distPath)) {
+  // Serve the production build from 'dist'
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 } else {
-  app.use(express.static(__dirname));
+  // If no build exists, inform the user (likely local dev mistake)
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.status(200).send('<h1>Server is running</h1><p>Frontend not built. Run <code>npm run build</code> if in production, or <code>npm run dev</code> for local development.</p>');
   });
 }
 
