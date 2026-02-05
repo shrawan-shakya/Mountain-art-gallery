@@ -93,7 +93,7 @@ app.post('/api/generate-metadata', async (req, res) => {
     
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `You are an elite museum curator for SHAKYA (formerly Mountain Art Gallery). Based on this description: "${prompt}", suggest a formal title, a period-appropriate artist name, the physical medium, and gallery dimensions. Ensure the suggestions feel authentic to Nepalese and Himalayan art history.`,
+      contents: `You are an elite museum curator for SHAKYA (formerly Mountain Art Gallery). Based on this description: "${prompt}", suggest a formal title, a period-appropriate artist name, the physical medium, and gallery dimensions. Ensure the suggestions feel authentic to Nepalese and Himalayan art history, reflecting our more than 25 years of expertise since 1998.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {

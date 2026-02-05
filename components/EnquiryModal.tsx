@@ -28,15 +28,16 @@ export const EnquiryModal: React.FC<EnquiryModalProps> = ({ artwork, onClose }) 
         onClick={onClose}
       />
       <div className="relative z-[2] bg-bone w-full max-w-4xl border border-frameEbony shadow-2xl animate-fade-up overflow-hidden flex flex-col md:flex-row">
-        {/* Modern Close Button */}
+        
+        {/* ABSOLUTELY SYMMETRICAL CLOSE BUTTON */}
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 md:top-8 md:right-8 group z-50 p-2 transition-transform active:scale-90"
+          className="absolute top-6 right-6 md:top-8 md:right-8 z-50 flex items-center justify-center w-12 h-12 group transition-all duration-500"
           aria-label="Close"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#999] group-hover:text-accent transition-colors">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
+          <div className="absolute inset-0 bg-accent/5 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" className="text-softBlack/30 group-hover:text-accent transition-colors relative z-10 overflow-visible">
+            <path d="M18 6L6 18M6 6L18 18" />
           </svg>
         </button>
 

@@ -82,6 +82,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ artworks, onAdd, onUpdate,
 
   return (
     <div className="fixed inset-0 z-[2500] bg-bone overflow-y-auto">
+      
+      {/* ABSOLUTELY SYMMETRICAL CLOSE BUTTON FOR DASHBOARD */}
+      <button 
+        onClick={onClose}
+        className="fixed top-6 right-6 sm:top-8 sm:right-8 z-[3000] flex items-center justify-center w-12 h-12 group transition-all duration-500"
+        aria-label="Close"
+      >
+        <div className="absolute inset-0 bg-softBlack/5 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500" />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" className="text-softBlack/30 group-hover:text-accent transition-colors relative z-10 overflow-visible">
+          <path d="M18 6L6 18M6 6L18 18" />
+        </svg>
+      </button>
+
       <div className="max-w-7xl mx-auto p-8 sm:p-20">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 border-b border-softBlack/10 pb-8 gap-6">
           <div>
@@ -90,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ artworks, onAdd, onUpdate,
           </div>
           <div className="flex gap-4">
             <button onClick={onLogout} className="text-[10px] uppercase tracking-widest border border-red-200 px-8 py-3 hover:bg-red-50 text-red-800 transition-all font-medium">Sign Out</button>
-            <button onClick={onClose} className="text-[10px] uppercase tracking-widest bg-softBlack text-white border border-softBlack px-8 py-3 hover:bg-accent hover:border-accent transition-all font-medium">Exit Portal</button>
+            <button onClick={onClose} className="hidden sm:block text-[10px] uppercase tracking-widest bg-softBlack text-white border border-softBlack px-8 py-3 hover:bg-accent hover:border-accent transition-all font-medium">Exit Portal</button>
           </div>
         </header>
 

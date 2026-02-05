@@ -148,11 +148,11 @@ function App() {
     const w = windowSize.width;
     const h = windowSize.height;
     return [
-      { final: { x: 0, y: 0, scale: isMobile ? 0.75 : 1.1 }, start: { x: 0, y: 0, scale: isMobile ? 2.5 : 4.0, rotate: 0 } },
-      { final: { x: -w * (isMobile ? 0.30 : 0.32), y: -h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 }, start: { x: -w * 1.5, y: -h * 1.2, scale: 0.4, rotate: -25 } },
-      { final: { x: w * (isMobile ? 0.30 : 0.32), y: -h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 }, start: { x: w * 1.5, y: h * -1.2, scale: 0.4, rotate: 25 } },
-      { final: { x: -w * (isMobile ? 0.30 : 0.32), y: h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 }, start: { x: -w * 1.5, y: h * 1.2, scale: 0.4, rotate: -25 } },
-      { final: { x: w * (isMobile ? 0.30 : 0.32), y: h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 }, start: { x: w * 1.5, y: h * 1.2, scale: 0.4, rotate: 25 } }
+      { final: { x: 0, y: 0, scale: isMobile ? 0.95 : 1.1 }, start: { x: 0, y: 0, scale: isMobile ? 2.5 : 4.0, rotate: 0 } },
+      { final: { x: -w * (isMobile ? 0.30 : 0.32), y: -h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.45 : 0.6 }, start: { x: -w * 1.5, y: -h * 1.2, scale: 0.4, rotate: -25 } },
+      { final: { x: w * (isMobile ? 0.30 : 0.32), y: -h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.45 : 0.6 }, start: { x: w * 1.5, y: h * -1.2, scale: 0.4, rotate: 25 } },
+      { final: { x: -w * (isMobile ? 0.30 : 0.32), y: h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.45 : 0.6 }, start: { x: -w * 1.5, y: h * 1.2, scale: 0.4, rotate: -25 } },
+      { final: { x: w * (isMobile ? 0.30 : 0.32), y: h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.45 : 0.6 }, start: { x: w * 1.5, y: h * 1.2, scale: 0.4, rotate: 25 } }
     ];
   }, [windowSize]);
 
@@ -177,11 +177,16 @@ function App() {
     <div className={`min-h-screen bg-bone selection:bg-accent/20 ${isMobileMenuOpen ? 'overflow-hidden' : ''}`}>
       {/* Mobile Menu Overlay */}
       <div 
-        className={`fixed inset-0 z-[1050] bg-accent transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden flex flex-col items-center justify-center
+        className={`fixed inset-0 z-[1050] bg-accent transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] lg:hidden flex flex-col items-center justify-between py-24
           ${isMobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'}
         `}
       >
-        <div className="flex flex-col gap-12 text-center px-8">
+        <div className="flex flex-col items-center text-bone opacity-40">
+           <h1 className="font-serif text-xl brand-shakya">SHAKYA</h1>
+           <p className="text-[8px] uppercase tracking-[0.6em] mt-2">The Gallery</p>
+        </div>
+
+        <div className="flex flex-col gap-10 text-center px-8">
           {['Explore', 'Our Heritage', 'Curator Portal'].map((item) => (
             <a 
               key={item} 
@@ -193,17 +198,21 @@ function App() {
                   else setShowLogin(true);
                 }
               }}
-              className="font-serif text-4xl text-bone brand-shakya italic hover:text-silver transition-all"
+              className="font-serif text-3xl sm:text-5xl text-bone brand-shakya italic hover:text-silver transition-all duration-500 hover:scale-105 active:scale-95"
             >
               {item === 'Curator Portal' ? (isAuthenticated ? 'Archive' : item) : item}
             </a>
           ))}
         </div>
-        <p className="absolute bottom-12 text-[8px] uppercase tracking-[0.5em] text-bone/30 italic">Est. 2006 — Nepal</p>
+
+        <div className="flex flex-col items-center text-bone/30 gap-4">
+           <p className="text-[8px] uppercase tracking-[0.5em] italic">Est. 1998 — Nepal</p>
+           <div className="w-12 h-[0.5px] bg-bone/20" />
+        </div>
       </div>
 
       <nav 
-        className={`fixed top-0 left-0 right-0 z-[1100] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] px-4 sm:px-16 
+        className={`fixed top-0 left-0 right-0 z-[1100] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] px-6 sm:px-16 
           ${scrolled && !isMobileMenuOpen ? 'bg-bone/95 backdrop-blur-md py-4 lg:py-6 shadow-sm border-b border-softBlack/5' : 'py-6 lg:py-12'}
           ${isNavVisible || isMobileMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
         `}
@@ -229,10 +238,14 @@ function App() {
             </button>
           </div>
 
-          <button onClick={toggleMobileMenu} className="lg:hidden flex flex-col justify-center items-center w-12 h-12 gap-1.5 z-[1200] relative">
-            <span className={`w-6 h-[1.5px] transition-all duration-500 transform ${isMobileMenuOpen ? 'bg-bone rotate-45 translate-y-[3.5px]' : 'bg-softBlack'}`} />
-            <span className={`w-6 h-[1.5px] transition-all duration-500 ${isMobileMenuOpen ? 'bg-bone opacity-0' : 'bg-softBlack opacity-100'}`} />
-            <span className={`w-6 h-[1.5px] transition-all duration-500 transform ${isMobileMenuOpen ? 'bg-bone -rotate-45 -translate-y-[3.5px]' : 'bg-softBlack'}`} />
+          {/* ABSOLUTELY SYMMETRICAL MOBILE MENU BUTTON */}
+          <button onClick={toggleMobileMenu} className="lg:hidden flex items-center justify-center w-11 h-11 z-[1200] relative group">
+            <div className={`absolute inset-0 rounded-full transition-all duration-500 ${isMobileMenuOpen ? 'bg-bone/10' : 'bg-softBlack/5 scale-0 group-hover:scale-100'}`} />
+            <div className="relative w-5 h-4">
+              <span className={`absolute left-0 w-full h-[1px] transition-all duration-500 ${isMobileMenuOpen ? 'bg-bone top-1/2 -translate-y-1/2 rotate-45' : 'bg-softBlack top-0'}`} />
+              <span className={`absolute left-0 top-1/2 w-full h-[1px] -translate-y-1/2 transition-all duration-300 ${isMobileMenuOpen ? 'bg-bone opacity-0 -translate-x-2' : 'bg-softBlack opacity-100'}`} />
+              <span className={`absolute left-0 w-full h-[1px] transition-all duration-500 ${isMobileMenuOpen ? 'bg-bone top-1/2 -translate-y-1/2 -rotate-45' : 'bg-softBlack bottom-0'}`} />
+            </div>
           </button>
         </div>
       </nav>
@@ -258,7 +271,7 @@ function App() {
                       zIndex: i === 0 ? 5 : 4,
                       opacity: Math.min(scrollProgress * 2.5, 1)
                     }}>
-                    <MuseumFrame className="w-56 md:w-80 lg:w-[32rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
+                    <MuseumFrame className="w-72 md:w-80 lg:w-[32rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
                       <div className="aspect-[4/3] bg-bone overflow-hidden flex items-center justify-center">
                         <img src={img} className="w-full h-full object-cover" alt="Hero" />
                       </div>
@@ -271,15 +284,15 @@ function App() {
             <div className="relative z-20 text-center px-6 pointer-events-none transition-all duration-300" 
                  style={{ opacity: Math.max(1 - scrollProgress * 5, 0), transform: `scale(${1 - scrollProgress * 0.4}) translateY(${scrollProgress * -100}px)` }}>
               <span className="font-sans text-[8px] sm:text-[11px] uppercase tracking-[1.2em] sm:tracking-[1.6em] font-light text-softBlack/40 mb-6 block translate-x-[0.6em] sm:translate-x-[0.8em]">
-                est. 2006
+                est. 1998
               </span>
               <div className="flex flex-col items-center">
-                <h2 className="font-serif text-4xl sm:text-7xl lg:text-[10rem] tracking-[0.1em] text-softBlack uppercase leading-none">
+                <h2 className="font-serif text-6xl sm:text-7xl lg:text-[10rem] tracking-[0.1em] text-softBlack uppercase leading-none">
                   <span className="font-bold block brand-shakya mb-2">
                     SHAKYA
                   </span>
                 </h2>
-                <div className="brand-shakya text-[10px] sm:text-base lg:text-xl text-accent/80 tracking-[0.6em] sm:tracking-[1.2em] font-light mt-2 sm:mt-4">
+                <div className="brand-shakya text-[12px] sm:text-base lg:text-xl text-accent/80 tracking-[0.6em] sm:tracking-[1.2em] font-light mt-2 sm:mt-4">
                   THE GALLERY
                 </div>
                 <div className="w-16 h-[1px] bg-accent/30 mt-8" />
@@ -303,11 +316,11 @@ function App() {
             <h2 className="font-serif text-4xl sm:text-6xl mb-12 brand-shakya font-light">The Legacy of SHAKYA</h2>
             <div className="max-w-2xl mx-auto space-y-8">
               <p className="text-lg sm:text-xl text-softBlack/80 font-serif font-light leading-relaxed italic">
-                "Evolving twenty years of local expertise into a global legacy, SHAKYA is the singular home for authenticated Nepalese art."
+                "Evolving more than twenty-five years of local expertise into a global legacy, SHAKYA is the singular home for authenticated Nepalese art."
               </p>
               <p className="text-xs sm:text-sm text-softBlack/60 font-light tracking-wide leading-loose">
-                Established in 2006 as the Mountain Art Gallery, our transition to the Shakya digital platform marks a significant new era. 
-                We have dedicated twenty years to the curation of Nepalese artistry, moving from a local physical shop in Kathmandu to an 
+                Established in 1998 as the Mountain Art Gallery, our transition to the Shakya digital platform marks a significant new era. 
+                We have dedicated more than twenty-five years to the curation of Nepalese artistry, moving from a local physical shop in Kathmandu to an 
                 international stage. Today, SHAKYA continues to represent the profound masters of Nepalese art, ensuring their legacy 
                 is preserved and recognized by collectors worldwide.
               </p>
@@ -356,12 +369,12 @@ function App() {
             
             <p className="text-[9px] sm:text-[11px] uppercase tracking-[0.3em] font-medium text-bone/60 max-w-md leading-loose">
               The Digital Evolution of Mountain Art Gallery <br className="hidden sm:block"/>
-              Preserving Nepalese Mastery since 2006
+              Preserving Nepalese Mastery since 1998
             </p>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 w-full border-t border-bone/5 pt-12 gap-8 items-center text-[8px] sm:text-[10px] uppercase tracking-[0.4em] text-bone/30">
-            <div className="text-left hidden sm:block">Archive ID: SK-2006-25</div>
+            <div className="text-left hidden sm:block">Archive ID: SK-1998-25</div>
             <div className="text-center font-medium text-bone/50">
               &copy; {new Date().getFullYear()} SHAKYA ARCHIVE
             </div>
