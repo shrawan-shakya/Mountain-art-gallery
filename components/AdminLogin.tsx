@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 interface AdminLoginProps {
@@ -26,18 +25,21 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose }) => {
         onClick={onClose}
       />
       <div className="relative z-[10] bg-bone w-full max-w-md border border-frameEbony p-12 shadow-2xl animate-fade-up">
+        {/* Modern Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-6 right-8 text-2xl font-thin text-[#999] hover:text-gold"
+          className="absolute top-6 right-6 group p-2 transition-transform active:scale-90"
+          aria-label="Close"
         >
-          &times;
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#999] group-hover:text-accent transition-colors">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
 
         <header className="text-center mb-10">
-          <div className="w-12 h-12 border border-softBlack flex items-center justify-center mx-auto mb-6 font-serif text-2xl">
-            <span>M</span>
-          </div>
-          <span className="text-[10px] uppercase tracking-[0.4em] text-gold block mb-2">Internal Access</span>
+          <p className="font-serif text-3xl brand-shakya mb-6">SHAKYA</p>
+          <span className="text-[10px] uppercase tracking-[0.4em] text-accent block mb-2">Internal Access</span>
           <h2 className="font-serif text-3xl">Curator Login</h2>
         </header>
 
@@ -54,7 +56,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose }) => {
                 setError(false);
               }}
               placeholder="Enter curator passcode"
-              className={`w-full bg-transparent border-b ${error ? 'border-red-400' : 'border-softBlack/10'} py-4 font-light text-center focus:outline-none focus:border-gold transition-colors`}
+              className={`w-full bg-transparent border-b ${error ? 'border-red-400' : 'border-softBlack/10'} py-4 font-light text-center focus:outline-none focus:border-accent transition-colors`}
             />
             {error && (
               <p className="text-[9px] uppercase tracking-widest text-red-500 mt-4 text-center">Invalid credentials. Please try again.</p>
@@ -63,14 +65,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, onClose }) => {
 
           <button 
             type="submit"
-            className="w-full bg-softBlack text-white py-5 text-[10px] uppercase tracking-[0.3em] font-medium transition-all hover:bg-gold"
+            className="w-full bg-softBlack text-white py-5 text-[10px] uppercase tracking-[0.3em] font-medium transition-all hover:bg-accent"
           >
             Authenticate
           </button>
         </form>
 
         <p className="text-center text-[8px] uppercase tracking-[0.2em] text-[#ccc] mt-10 leading-relaxed">
-          Access is restricted to authorized gallery personnel only. <br/>All attempts are logged.
+          Access is restricted to authorized SHAKYA personnel only. <br/>All attempts are logged.
         </p>
       </div>
     </div>

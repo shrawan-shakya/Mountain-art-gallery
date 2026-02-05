@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
@@ -89,16 +88,12 @@ app.delete('/api/artworks/:id', (req, res) => {
 
 app.post('/api/generate-metadata', async (req, res) => {
   try {
-    // Correct initialization: always use process.env.API_KEY directly in the named parameter
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const { prompt } = req.body;
     
-    // Using gemini-3-pro for high-quality curator reasoning
-    // Note: Removed googleSearch tool because guidelines state output might not be JSON if search is used,
-    // and mandatory grounding chunk extraction would be required.
     const response = await ai.models.generateContent({
       model: "gemini-3-pro-preview",
-      contents: `You are an elite museum curator for the Mountain Art Gallery. Based on this description: "${prompt}", suggest a formal title, a period-appropriate artist name, the physical medium, and gallery dimensions. Ensure the suggestions feel authentic to alpine art history.`,
+      contents: `You are an elite museum curator for SHAKYA (formerly Mountain Art Gallery). Based on this description: "${prompt}", suggest a formal title, a period-appropriate artist name, the physical medium, and gallery dimensions. Ensure the suggestions feel authentic to Nepalese and Himalayan art history.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -115,7 +110,6 @@ app.post('/api/generate-metadata', async (req, res) => {
       }
     });
     
-    // response.text is a getter, correctly handled here
     const text = response.text;
     if (!text) throw new Error("Empty response from AI");
     res.json(JSON.parse(text));
