@@ -59,3 +59,11 @@ export const INITIAL_ARTWORKS: Artwork[] = [
 ];
 
 export const HERO_IMAGE = "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=90&w=2400";
+
+export const BENTO_HERO_IMAGES = [
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=1200", // Center
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&q=80&w=1000", // Top-Left
+  "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&q=80&w=1000", // Top-Right
+  "https://images.unsplash.com/photo-1434394354979-a235cd36269d?auto=format&fit=crop&q=80&w=1000", // Bottom-Left
+  "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?auto=format&fit=crop&q=80&w=1000"  // Bottom-Right
+];

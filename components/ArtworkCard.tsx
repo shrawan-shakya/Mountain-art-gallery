@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Artwork } from '../types';
 import { MuseumFrame } from './MuseumFrame';
@@ -23,8 +24,8 @@ export const ArtworkCard: React.FC<ArtworkCardProps> = ({ artwork, onEnquire }) 
         </div>
       </MuseumFrame>
 
-      {/* Metallic Informational Plaque */}
-      <div className="plaque-metallic mt-8 sm:mt-12 mx-auto w-[92%] sm:w-[90%] max-w-[340px] p-6 sm:p-10 bg-gradient-to-br from-[#F8F8F8] via-[#FFFFFF] to-[#EBEBEB] border-[0.5px] border-[#d8d8d8] relative text-center shadow-[0_10px_25px_rgba(0,0,0,0.06)] transition-all duration-700 hover:scale-[1.03] hover:shadow-[0_25px_50px_rgba(0,0,0,0.12)] z-40">
+      {/* Metallic Informational Plaque - Reduced max-width and padding */}
+      <div className="plaque-metallic mt-8 sm:mt-12 mx-auto w-[88%] sm:w-[85%] max-w-[300px] p-5 sm:p-8 bg-gradient-to-br from-[#F8F8F8] via-[#FFFFFF] to-[#EBEBEB] border-[0.5px] border-[#d8d8d8] relative text-center shadow-[0_10px_25px_rgba(0,0,0,0.06)] transition-all duration-700 hover:scale-[1.03] hover:shadow-[0_25px_50px_rgba(0,0,0,0.12)] z-40">
         
         {/* Brass Mounting Hardware (Rivets) */}
         <div className="absolute top-2.5 left-2.5 w-1.5 h-1.5 rounded-full bg-softBlack/10 shadow-inner" />

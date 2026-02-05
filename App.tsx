@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Artwork } from './types';
-import { INITIAL_ARTWORKS, HERO_IMAGE } from './constants';
+import { INITIAL_ARTWORKS, BENTO_HERO_IMAGES } from './constants';
 import { ArtworkCard } from './components/ArtworkCard';
 import { MuseumFrame } from './components/MuseumFrame';
 import { EnquiryModal } from './components/EnquiryModal';
@@ -11,42 +11,143 @@ import { AdminLogin } from './components/AdminLogin';
 function App() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [scrolled, setScrolled] = useState(false);
-  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
   
+  const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Sync with Backend
+  const heroRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+
   useEffect(() => {
     fetchArtworks();
     const auth = sessionStorage.getItem('gallery_auth');
     if (auth === 'true') setIsAuthenticated(true);
+
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const fetchArtworks = async () => {
     try {
       const response = await fetch('/api/artworks');
-      if (!response.ok) {
-        throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error("Server error");
       const data = await response.json();
       setArtworks(data.length > 0 ? data : INITIAL_ARTWORKS);
     } catch (e) {
-      console.error("Gallery API Error:", e);
       setArtworks(INITIAL_ARTWORKS);
+    }
+  };
+
+  const addArtwork = async (formData: FormData) => {
+    try {
+      const response = await fetch('/api/artworks', {
+        method: 'POST',
+        body: formData
+      });
+      if (!response.ok) throw new Error("Failed to add artwork");
+      const newArt = await response.json();
+      setArtworks(prev => [newArt, ...prev]);
+    } catch (e) {
+      console.error("Add Artwork Error:", e);
+    }
+  };
+
+  const updateArtwork = async (id: string, formData: FormData) => {
+    try {
+      const response = await fetch(`/api/artworks/${id}`, {
+        method: 'PUT',
+        body: formData
+      });
+      if (!response.ok) throw new Error("Failed to update artwork");
+      const updatedArt = await response.json();
+      setArtworks(prev => prev.map(art => art.id === id ? updatedArt : art));
+    } catch (e) {
+      console.error("Update Artwork Error:", e);
+    }
+  };
+
+  const deleteArtwork = async (id: string) => {
+    if (!window.confirm("Are you sure you want to remove this piece from the archive?")) return;
+    try {
+      const response = await fetch(`/api/artworks/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error("Failed to delete artwork");
+      setArtworks(prev => prev.filter(art => art.id !== id));
+    } catch (e) {
+      console.error("Delete Artwork Error:", e);
     }
   };
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 80);
-      if (window.scrollY > 100 && isMobileMenuOpen) setIsMobileMenuOpen(false);
+      const currentScrollY = window.scrollY;
+      
+      // Determine overall scrolled state (for backdrop/shrink)
+      setScrolled(currentScrollY > 80);
+
+      // Determine nav visibility (Hide on scroll down, show on scroll up)
+      if (currentScrollY > lastScrollY.current && currentScrollY > 150) {
+        setIsNavVisible(false);
+      } else {
+        setIsNavVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+
+      if (heroRef.current) {
+        const rect = heroRef.current.getBoundingClientRect();
+        const totalHeight = heroRef.current.offsetHeight - window.innerHeight;
+        const progress = Math.min(Math.max(-rect.top / totalHeight, 0), 1);
+        
+        window.requestAnimationFrame(() => {
+          setScrollProgress(progress);
+        });
+      }
     };
-    window.addEventListener('scroll', handleScroll);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [isMobileMenuOpen]);
+  }, []);
+
+  const bentoConfig = useMemo(() => {
+    const isMobile = windowSize.width < 768;
+    const w = windowSize.width;
+    const h = windowSize.height;
+
+    return [
+      { 
+        final: { x: 0, y: 0, scale: isMobile ? 0.75 : 1.1 },
+        start: { x: 0, y: 0, scale: isMobile ? 2.5 : 4.0, rotate: 0 }
+      },
+      { 
+        final: { x: -w * (isMobile ? 0.30 : 0.32), y: -h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 },
+        start: { x: -w * 1.5, y: -h * 1.2, scale: 0.4, rotate: -25 }
+      },
+      { 
+        final: { x: w * (isMobile ? 0.30 : 0.32), y: -h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 },
+        start: { x: w * 1.5, y: -h * 1.2, scale: 0.4, rotate: 25 }
+      },
+      { 
+        final: { x: -w * (isMobile ? 0.30 : 0.32), y: h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 },
+        start: { x: -w * 1.5, y: h * 1.2, scale: 0.4, rotate: -25 }
+      },
+      { 
+        final: { x: w * (isMobile ? 0.30 : 0.32), y: h * (isMobile ? 0.30 : 0.28), scale: isMobile ? 0.35 : 0.6 },
+        start: { x: w * 1.5, y: h * 1.2, scale: 0.4, rotate: 25 }
+      }
+    ];
+  }, [windowSize]);
 
   const handleLogin = (pass: string) => {
     if (pass === '1234' || pass === 'admin') {
@@ -63,56 +164,17 @@ function App() {
     setIsAuthenticated(false);
     setShowDashboard(false);
     sessionStorage.removeItem('gallery_auth');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  const addArtwork = async (formData: FormData) => {
-    try {
-      const res = await fetch('/api/artworks', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error("Failed to add artwork");
-      const newArt = await res.json();
-      setArtworks(prev => [newArt, ...prev]);
-    } catch (e) {
-      console.error("Add Artwork Error:", e);
-      alert("Could not add artwork to archive.");
-    }
-  };
-
-  const updateArtwork = async (id: string, formData: FormData) => {
-    try {
-      const res = await fetch(`/api/artworks/${id}`, { method: 'PUT', body: formData });
-      if (!res.ok) throw new Error("Failed to update artwork");
-      const updated = await res.json();
-      setArtworks(prev => prev.map(art => art.id === id ? updated : art));
-    } catch (e) {
-      console.error("Update Artwork Error:", e);
-      alert("Could not update artwork.");
-    }
-  };
-
-  const deleteArtwork = async (id: string) => {
-    try {
-      const res = await fetch(`/api/artworks/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error("Failed to delete artwork");
-      setArtworks(prev => prev.filter(a => a.id !== id));
-    } catch (e) {
-      console.error("Delete Artwork Error:", e);
-      alert("Could not remove artwork from archive.");
-    }
-  };
-
-  const openCuratorPortal = () => {
-    if (isAuthenticated) setShowDashboard(true);
-    else setShowLogin(true);
-    setIsMobileMenuOpen(false);
-  };
-
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
     <div className="min-h-screen bg-bone selection:bg-gold/30">
-      {/* Navbar */}
-      <nav className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-1000 px-4 sm:px-16 ${scrolled ? 'bg-bone/95 backdrop-blur-md py-4 lg:py-6 shadow-sm border-b border-softBlack/5' : 'py-6 lg:py-12'}`}>
+      {/* Navigation - With slide-up and fade-out functionality */}
+      <nav 
+        className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] px-4 sm:px-16 
+          ${scrolled ? 'bg-bone/95 backdrop-blur-md py-4 lg:py-6 shadow-sm border-b border-softBlack/5' : 'py-6 lg:py-12'}
+          ${isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
+        `}
+      >
         <div className="max-w-[1600px] mx-auto flex justify-between items-center">
           <div className="flex items-center cursor-pointer group" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="w-8 h-8 sm:w-10 sm:h-10 border border-softBlack flex items-center justify-center mr-3 sm:mr-5 font-serif text-lg sm:text-2xl transition-all duration-700 group-hover:border-gold group-hover:rotate-[135deg] group-hover:bg-gold group-hover:text-white">
@@ -123,123 +185,114 @@ function App() {
             </h1>
           </div>
 
-          {/* Desktop Links - Hidden on Mobile and Tablet (lg: breakpoint) */}
           <div className="hidden lg:flex gap-16 items-center">
             {['Explore', 'About Us'].map(item => (
-              <a key={item} href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} className="text-[9px] uppercase tracking-[0.4em] text-softBlack/50 hover:text-gold transition-all relative group">
+              <a key={item} href={`#explore`} className="text-[9px] uppercase tracking-[0.4em] text-softBlack/50 hover:text-gold transition-all relative group">
                 {item}
                 <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-gold transition-all duration-500 group-hover:w-full" />
               </a>
             ))}
-            <button onClick={openCuratorPortal} className="text-[9px] uppercase tracking-[0.4em] text-gold font-bold hover:text-gold/70 transition-all border border-gold/20 px-4 py-2 hover:bg-gold/5">
+            <button onClick={() => { if (isAuthenticated) setShowDashboard(true); else setShowLogin(true); }} className="text-[9px] uppercase tracking-[0.4em] text-gold font-bold hover:text-gold/70 transition-all border border-gold/20 px-4 py-2 hover:bg-gold/5">
               {isAuthenticated ? 'Archive' : 'Curator Portal'}
             </button>
           </div>
 
-          {/* Hamburger Button - Shown on Mobile and Tablet (lg: breakpoint) */}
-          <button 
-            onClick={toggleMobileMenu} 
-            className="lg:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 z-[1100]"
-            aria-label="Toggle Menu"
-          >
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="lg:hidden flex flex-col justify-center items-center w-10 h-10 gap-1.5 z-[1100]">
             <span className={`w-6 h-[1px] bg-softBlack transition-all duration-500 ${isMobileMenuOpen ? 'rotate-45 translate-y-[3px]' : ''}`} />
             <span className={`w-6 h-[1px] bg-softBlack transition-all duration-500 ${isMobileMenuOpen ? 'opacity-0' : 'opacity-100'}`} />
-            <span className={`w-6 h-[1px] bg-softBlack transition-all duration-500 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[10px]' : ''}`} />
+            <span className={`w-6 h-[1px] bg-softBlack transition-all duration-500 ${isMobileMenuOpen ? '-rotate-45 -translate-y-[4px]' : ''}`} />
           </button>
         </div>
       </nav>
 
-      {/* Mobile/Tablet Menu Overlay */}
-      <div className={`fixed inset-0 z-[1050] bg-bone flex flex-col items-center justify-center transition-all duration-700 ease-in-out px-8 text-center ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
-        <div className="flex flex-col gap-10">
-          {['Explore', 'About Us'].map((item, idx) => (
-            <a 
-              key={item} 
-              href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className={`text-2xl lg:text-3xl uppercase tracking-[0.5em] text-softBlack font-serif italic transition-all duration-700 ${isMobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-              style={{ transitionDelay: `${idx * 100}ms` }}
-            >
-              {item}
-            </a>
-          ))}
-          <button 
-            onClick={openCuratorPortal} 
-            className={`text-[10px] uppercase tracking-[0.4em] text-gold font-bold border border-gold/30 px-8 py-4 mt-4 transition-all duration-700 ${isMobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-            style={{ transitionDelay: `200ms` }}
-          >
-            {isAuthenticated ? 'Archive' : 'Curator Portal'}
-          </button>
-        </div>
-      </div>
-
       <main>
-        {/* Hero Section */}
-        <section className="min-h-screen flex flex-col items-center justify-center relative pt-24 sm:pt-48 pb-16 sm:pb-32 bg-bone">
-          <div className="absolute font-serif text-[25rem] sm:text-[50rem] italic opacity-[0.012] z-0 pointer-events-none select-none -translate-y-8 sm:-translate-y-20">M</div>
-          
-          <div className="w-full max-w-[1100px] px-4 sm:px-8 z-[1] animate-fade-in group mb-16 sm:mb-32">
-            <MuseumFrame className="w-full">
-               <div className="aspect-[4/3] sm:aspect-[16/7] overflow-hidden">
-                 <img src={HERO_IMAGE} alt="Summit Vistas" className="w-full h-full object-cover transition-transform duration-[20s] group-hover:scale-105" />
-               </div>
-            </MuseumFrame>
-          </div>
+        {/* CINEMATIC BENTO SCROLL HERO (400vh Track) */}
+        <section ref={heroRef} className="relative h-[400vh] bg-bone">
+          <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+            
+            {/* Background Texture/Emblem */}
+            <div className="absolute font-serif text-[30rem] md:text-[50rem] italic opacity-[0.015] z-0 pointer-events-none select-none"
+                 style={{ 
+                   transform: `scale(${1 + scrollProgress * 0.3}) rotate(${scrollProgress * 4}deg)`,
+                 }}>M</div>
 
-          <div className="text-center max-w-[1000px] z-[1] px-6">
-            <div className="mb-10 sm:mb-20 animate-fade-up [animation-delay:300ms] opacity-0 fill-mode-forwards">
-              <div className="flex flex-col items-center">
-                <span className="font-sans text-[8px] sm:text-[11px] uppercase tracking-[0.6em] sm:tracking-[1.2em] font-medium text-softBlack/40 mb-5 sm:mb-10 translate-x-[0.3em] sm:translate-x-[0.6em]">
-                  This is not a website
-                </span>
-                
-                <div className="w-12 sm:w-24 h-[1px] bg-gradient-to-r from-transparent via-gold to-transparent mb-5 sm:mb-10 opacity-60" />
-                
-                <h2 className="font-serif text-3xl sm:text-7xl tracking-[0.1em] sm:tracking-[0.2em] text-softBlack uppercase flex flex-col items-center leading-none">
-                  <span className="italic font-light text-lg sm:text-3xl mb-2 sm:mb-4 opacity-70 tracking-[0.2em] sm:tracking-[0.4em] normal-case">It is</span>
-                  <span className="font-bold relative">
-                    THE <span className="text-gold">GALLERY</span>
-                    <div className="absolute -bottom-2 sm:-bottom-4 left-1/2 -translate-x-1/2 w-1/3 h-[1px] sm:h-[2px] bg-gold/30" />
-                  </span>
-                </h2>
-              </div>
+            {/* BENTO GRID ASSEMBLY SYSTEM - Explicitly Centered */}
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              {BENTO_HERO_IMAGES.map((img, i) => {
+                const config = bentoConfig[i];
+                if (!config) return null;
+
+                const curX = config.start.x + (config.final.x - config.start.x) * scrollProgress;
+                const curY = config.start.y + (config.final.y - config.start.y) * scrollProgress;
+                const curScale = config.start.scale + (config.final.scale - config.start.scale) * scrollProgress;
+                const curRotate = (config.start.rotate || 0) * (1 - scrollProgress);
+
+                return (
+                  <div 
+                    key={i} 
+                    className="absolute left-1/2 top-1/2"
+                    style={{
+                      transform: `translate3d(calc(-50% + ${curX}px), calc(-50% + ${curY}px), 0) scale(${curScale}) rotate(${curRotate}deg)`,
+                      zIndex: i === 0 ? 5 : 4,
+                      opacity: Math.min(scrollProgress * 2, 1)
+                    }}
+                  >
+                    <MuseumFrame className="w-56 md:w-80 lg:w-[32rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
+                      <div className="aspect-[4/3] bg-bone overflow-hidden flex items-center justify-center">
+                        <img src={img} className="w-full h-full object-cover" alt="Hero Artwork" />
+                      </div>
+                    </MuseumFrame>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="animate-fade-up [animation-delay:500ms] opacity-0 fill-mode-forwards mb-10 sm:mb-20">
-              <h2 className="font-serif text-lg sm:text-4xl font-light italic leading-relaxed text-softBlack/60 max-w-2xl mx-auto px-4">
-                "The vast silence of the high peaks, <br className="hidden lg:block" /> stretching beyond the horizon."
+            {/* TUNNELING HEADER */}
+            <div className="relative z-20 text-center px-6 pointer-events-none transition-all duration-300" 
+                 style={{ 
+                   opacity: Math.max(1 - scrollProgress * 5, 0),
+                   transform: `scale(${1 - scrollProgress * 0.4}) translateY(${scrollProgress * -100}px)` 
+                 }}>
+              <span className="font-sans text-[8px] sm:text-[10px] uppercase tracking-[1em] sm:tracking-[1.8em] font-medium text-softBlack/40 mb-6 block translate-x-[0.5em] sm:translate-x-[0.9em]">
+                Unveiling the archive
+              </span>
+              <h2 className="font-serif text-3xl sm:text-6xl lg:text-9xl tracking-[0.1em] text-softBlack uppercase leading-none mb-10">
+                <span className="italic font-light text-xl sm:text-3xl block mb-4 opacity-60 tracking-[0.3em] normal-case">Behold</span>
+                <span className="font-bold relative">
+                  THE <span className="text-gold">GALLERY</span>
+                  <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-1/4 h-[1px] bg-gold/30" />
+                </span>
               </h2>
             </div>
-            
-            <div className="flex flex-col items-center animate-fade-up [animation-delay:700ms] opacity-0 fill-mode-forwards">
-              <a href="#explore" className="inline-block px-8 sm:px-14 py-4 sm:py-6 border border-softBlack/10 text-softBlack relative transition-all group hover:border-gold hover:shadow-2xl bg-white overflow-hidden">
-                <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.3em] sm:tracking-[0.6em] font-bold relative z-10 transition-colors group-hover:text-white">Enter Exhibition</span>
-                <div className="absolute inset-0 bg-softBlack translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out" />
-              </a>
-              <div className="mt-12 sm:mt-24 flex flex-col items-center">
-                <div className="w-[1px] h-10 sm:h-16 bg-softBlack/10 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full bg-gold animate-scroll-slide" />
-                </div>
+
+            {/* Scroll Progress Indicator */}
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-500"
+                 style={{ opacity: 1 - scrollProgress * 15 }}>
+              <span className="text-[7px] uppercase tracking-[0.6em] text-softBlack/20 italic">Descent into the sublime</span>
+              <div className="w-[1px] h-16 bg-softBlack/10 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-full bg-gold animate-scroll-slide" />
               </div>
             </div>
           </div>
         </section>
 
-        <section id="explore" className="py-24 sm:py-64 px-4 sm:px-16">
+        {/* Explore Section */}
+        <section id="explore" className="py-24 sm:py-64 px-4 sm:px-16 bg-bone">
           <div className="max-w-[1440px] mx-auto">
-            <header className="flex flex-col md:flex-row justify-between items-end mb-20 sm:mb-48 max-sm:items-start gap-8 sm:gap-10 border-b border-softBlack/5 pb-10 sm:pb-20">
+            <header className="flex flex-col md:flex-row justify-between items-end mb-24 sm:mb-48 max-sm:items-start gap-12 border-b border-softBlack/5 pb-16 sm:pb-24">
               <div className="max-w-2xl">
-                <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.3em] sm:tracking-[0.4em] text-gold block mb-5 sm:mb-8 font-bold">Phase I: Collection</span>
-                <h3 className="font-serif text-4xl sm:text-8xl font-normal leading-[1.1] text-softBlack tracking-tighter">Altitudes &<br/>Atmosphere</h3>
+                <span className="text-[8px] sm:text-[10px] uppercase tracking-[0.4em] text-gold block mb-8 font-bold">Curated Archives</span>
+                <h3 className="font-serif text-4xl sm:text-7xl lg:text-9xl font-normal leading-[1] text-softBlack tracking-tighter">Peaks &<br/>Presence</h3>
               </div>
-              <div className="max-w-[400px]">
-                <p className="text-sm sm:text-base text-[#666] font-light leading-relaxed mb-5 sm:mb-8 italic">"Carved by ice and wind. Our role is but to archive the sublime before the light shifts."</p>
-                <div className="flex items-center gap-4 text-[7px] sm:text-[9px] uppercase tracking-[0.3em] sm:tracking-[0.4em] text-softBlack/40">
-                  <div className="w-8 h-[1px] bg-softBlack/20" />
-                  <span>Curated Works</span>
+              <div className="max-w-[420px]">
+                <p className="text-sm sm:text-base text-[#666] font-light leading-relaxed mb-8 italic">"Moments of high-altitude stillness, curated for the modern collector of the sublime."</p>
+                <div className="flex items-center gap-4 text-[7px] sm:text-[9px] uppercase tracking-[0.3em] text-softBlack/40">
+                  <div className="w-10 h-[1px] bg-softBlack/20" />
+                  <span>Permanent Exhibition</span>
                 </div>
               </div>
             </header>
+            
             <div className="gallery-grid-columns">
               {artworks.map(art => (
                 <ArtworkCard key={art.id} artwork={art} onEnquire={setSelectedArtwork} />
@@ -250,20 +303,14 @@ function App() {
       </main>
 
       <footer className="py-20 sm:py-40 px-4 sm:px-16 bg-bone border-t border-softBlack/5 text-center">
-        <div className="max-w-[1400px] mx-auto flex flex-col items-center gap-10 sm:gap-16">
-          <div className="flex flex-col items-center gap-6 sm:gap-8">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 border border-softBlack/20 flex items-center justify-center font-serif text-xl sm:text-2xl text-softBlack/40"><span>M</span></div>
-            <p className="font-serif text-2xl sm:text-3xl italic text-softBlack tracking-tight opacity-80">Mountain Art Gallery</p>
+        <div className="max-w-[1400px] mx-auto flex flex-col items-center gap-12 text-softBlack/30">
+          <div className="flex flex-col items-center gap-6">
+            <div className="w-10 h-10 border border-softBlack/20 flex items-center justify-center font-serif text-xl"><span>M</span></div>
+            <p className="font-serif text-2xl italic tracking-tight opacity-80">Mountain Art Gallery</p>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 sm:gap-12">
-            {['Instagram', 'Artsy', 'Journal'].map(link => (
-              <a key={link} href="#" className="text-[8px] sm:text-[10px] uppercase tracking-[0.3em] sm:tracking-[0.5em] text-softBlack/30 hover:text-gold transition-all">{link}</a>
-            ))}
-          </div>
-          <div className="w-12 h-[1px] bg-softBlack/5" />
-          <div className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] sm:tracking-[0.4em] text-softBlack/30 flex flex-col gap-4">
+          <div className="text-[8px] sm:text-[9px] uppercase tracking-[0.3em] flex flex-col gap-4">
             <p>&copy; {new Date().getFullYear()} Mountain Art Gallery</p>
-            <p className="opacity-50 tracking-[0.2em]">London &bull; Chamonix &bull; Zermatt</p>
+            <p className="opacity-50">London &bull; Chamonix &bull; Zermatt</p>
           </div>
         </div>
       </footer>
