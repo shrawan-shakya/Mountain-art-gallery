@@ -23,6 +23,11 @@ function App() {
 
   const heroRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
+  
+  // Smooth scroll interpolation refs
+  const targetProgress = useRef(0);
+  const currentProgress = useRef(0);
+  const rafId = useRef<number | null>(null);
 
   useEffect(() => {
     fetchArtworks();
@@ -89,14 +94,33 @@ function App() {
     }
   };
 
+  // Smoothing loop
+  useEffect(() => {
+    const update = () => {
+      // Linear interpolation (lerp) for buttery smooth motion
+      const lerpAmount = 0.085; 
+      const diff = targetProgress.current - currentProgress.current;
+      
+      if (Math.abs(diff) > 0.0001) {
+        currentProgress.current += diff * lerpAmount;
+        setScrollProgress(currentProgress.current);
+      }
+      
+      rafId.current = requestAnimationFrame(update);
+    };
+    
+    rafId.current = requestAnimationFrame(update);
+    return () => {
+      if (rafId.current) cancelAnimationFrame(rafId.current);
+    };
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
-      // Determine overall scrolled state (for backdrop/shrink)
       setScrolled(currentScrollY > 80);
 
-      // Determine nav visibility (Hide on scroll down, show on scroll up)
       if (currentScrollY > lastScrollY.current && currentScrollY > 150) {
         setIsNavVisible(false);
       } else {
@@ -108,11 +132,9 @@ function App() {
       if (heroRef.current) {
         const rect = heroRef.current.getBoundingClientRect();
         const totalHeight = heroRef.current.offsetHeight - window.innerHeight;
+        // Update the target, the RAF loop handles the smoothing
         const progress = Math.min(Math.max(-rect.top / totalHeight, 0), 1);
-        
-        window.requestAnimationFrame(() => {
-          setScrollProgress(progress);
-        });
+        targetProgress.current = progress;
       }
     };
 
@@ -216,7 +238,7 @@ function App() {
                    transform: `scale(${1 + scrollProgress * 0.3}) rotate(${scrollProgress * 4}deg)`,
                  }}>M</div>
 
-            {/* BENTO GRID ASSEMBLY SYSTEM - Explicitly Centered */}
+            {/* BENTO GRID ASSEMBLY SYSTEM - Smoothly Interpolated */}
             <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
               {BENTO_HERO_IMAGES.map((img, i) => {
                 const config = bentoConfig[i];
@@ -230,11 +252,11 @@ function App() {
                 return (
                   <div 
                     key={i} 
-                    className="absolute left-1/2 top-1/2"
+                    className="absolute left-1/2 top-1/2 will-change-transform"
                     style={{
                       transform: `translate3d(calc(-50% + ${curX}px), calc(-50% + ${curY}px), 0) scale(${curScale}) rotate(${curRotate}deg)`,
                       zIndex: i === 0 ? 5 : 4,
-                      opacity: Math.min(scrollProgress * 2, 1)
+                      opacity: Math.min(scrollProgress * 2.5, 1)
                     }}
                   >
                     <MuseumFrame className="w-56 md:w-80 lg:w-[32rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)]">
